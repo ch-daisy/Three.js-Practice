@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>three.js json-data-test</title>
+	<script src="javascripts/lib/three.min.js"></script>
+	<style>body{overflow:hidden;background:#ccc}</style>
+</head>
+<body>
+	<div id="Loading" style="color:#fff">Loading...</div>
+</body>
+	<script>
+	/* 场景 */
+	var WIDTH = document.documentElement.offsetWidth || 800,
+		HEIGHT = document.documentElement.clientHeight || 600;
+	var scene = new THREE.Scene();
+	/* 摄像头 */
+	var VIEW_ANGLE = 75,
+		ASPECT = WIDTH / HEIGHT,
+		NEAR = 0.1,
+		FAR = 1500;
+	var	camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+		camera.position.set(0, 0, 1000);
+		scene.add(camera);
+	/* 渲染器 */
+	var	renderer = new THREE.WebGLRenderer();
+		renderer.setSize(WIDTH , HEIGHT);
+		renderer.setClearColor( 0xf0f0f0 );
+		document.body.appendChild(renderer.domElement);
+	/* 灯光 */
+	var light = new THREE.DirectionalLight(0xFFFFFF);
+		light.position.set(0, 0, 99).normalize();
+		scene.add(light);
+		
+	/* 显示对象 */
+	var material = new THREE.MeshLambertMaterial({ color: 0x938F8F, wireframe: true  }),
+		obj;
+	var loader = new THREE.JSONLoader(true);
+    loader.load("threeJsModel/airplane.json", function ( geometry ) {
+		var loading = document.getElementById("Loading");
+		loading.parentNode.removeChild(loading);
+		obj = new THREE.Mesh(geometry, material);
+		obj.position.set(0,1,996);
+		scene.add(obj);
+		
+		//视角手动旋转
+		//(function animate() {
+		//	requestAnimationFrame( animate );
+		//	renderer.render( scene, camera );
+		//})();
+
+		//视角自动旋转
+		var start = new Date().getTime(),delta;
+		(function anime(){
+			delta = new Date().getTime() - start;
+			obj.rotation.y =   delta / 1000;
+			renderer.render(scene, camera);
+			return requestAnimationFrame(anime);
+		})();
+	});
+</script>
+</html>

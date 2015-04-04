@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - geometry - cube</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="javascripts/lib/three.min.js"></script>
+
+		<script src="javascripts/main/Projector.js"></script>
+		<script src="javascripts/main/CanvasRenderer.js"></script>
+
+		<script src="javascripts/lib/stats.min.js"></script>
+
+		<script>
+
+			var container, stats;//容器和性能监视器
+
+			var camera, scene, renderer;//相机、场景和渲染器
+
+			var cube, plane;//立体图和底平面
+
+			var targetRotation = 0;//新的扭转值
+			var targetRotationOnMouseDown = 0;//点击时的扭转值
+
+			var mouseX = 0;//新的X坐标
+			var mouseXOnMouseDown = 0;//点击时的X坐标
+
+			var windowHalfX = window.innerWidth / 2;//半屏宽
+			var windowHalfY = window.innerHeight / 2;//半屏高
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+				//信息提示
+				var info = document.createElement( 'div' );
+				info.style.position = 'absolute';
+				info.style.top = '10px';
+				info.style.width = '100%';
+				info.style.textAlign = 'center';
+				info.innerHTML = 'Drag to spin the cube';
+				container.appendChild( info );
+				
+				
+				//创建相机
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.y = 150;
+				camera.position.z = 500;
+				//创建场景
+				scene = new THREE.Scene();
+				//相机加入场景
+				scene.add(camera); 
+
+				// 立体表面
+
+				var geometry = new THREE.BoxGeometry( 200, 200, 200 );
+
+				for ( var i = 0; i < geometry.faces.length; i += 2 ) {
+
+					var hex = Math.random() * 0xffffff;
+					geometry.faces[ i ].color.setHex( hex );
+					geometry.faces[ i + 1 ].color.setHex( hex );
+
+				}
+				//Basic材质
+				var material = new THREE.MeshBasicMaterial( { vertexColors: THREE.FaceColors, overdraw: 0.5 } );
+				//材质覆盖在立体表面上，生成mesh 
+				cube = new THREE.Mesh( geometry, material );
+				cube.position.y = 150;
+				// 将mesh加入到场景中 
+				scene.add( cube );
+
+				// 阴影
+
+				var geometry = new THREE.PlaneBufferGeometry( 200, 200 );
+				geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+				//Basic材质
+				var material = new THREE.MeshBasicMaterial( { color: 0xe0e0e0, overdraw: 0.5 } );
+
+				plane = new THREE.Mesh( geometry, material );
+				scene.add( plane );
+				
+				// 创建一个点光源 
+				//var pointLight = new THREE.PointLight(0xFFFFFF); 
+				// 设置点光源的位置 
+				//pointLight.position.x = -300; 
+				//pointLight.position.y = 300; 
+				//pointLight.position.z = 50; 
+				// 将点光源加入场景 
+				//scene.add(pointLight); 
+
+				
+				//创建渲染器
+				renderer = new THREE.CanvasRenderer();
+				renderer.setClearColor( 0xf0f0f0 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				// 启动渲染器 
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				// 将渲染器加到DOM结构中 
+				container.appendChild( renderer.domElement );
+
+				//启动性能监视器
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				//性能监视器加到DOM结构中
+				container.appendChild( stats.domElement );
+				
+				//添加交互事件
+				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			//窗口大小改变调整相机矩阵并用新尺寸重绘3D图
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.addEventListener( 'mouseout', onDocumentMouseOut, false );
+				//鼠标按下时的X坐标
+				mouseXOnMouseDown = event.clientX - windowHalfX;
+				//鼠标按下时的扭转值
+				targetRotationOnMouseDown = targetRotation;
+
+			}
+
+			function onDocumentMouseMove( event ) {
+				//新的X坐标
+				mouseX = event.clientX - windowHalfX;
+				//新的扭转值
+				targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
+
+			}
+
+			function onDocumentMouseUp( event ) {
+
+				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
+			}
+
+			function onDocumentMouseOut( event ) {
+
+				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
+			}
+
+			function onDocumentTouchStart( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotationOnMouseDown = targetRotation;
+
+				}
+
+			}
+
+			function onDocumentTouchMove( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+
+				}
+
+			}
+
+			
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				plane.rotation.y = cube.rotation.y += ( targetRotation - cube.rotation.y ) * 0.05;
+				//渲染（开始画）
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
